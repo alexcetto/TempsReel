@@ -8,29 +8,25 @@ pthread_t tid;
 pthread_attr_t attr;
 
 void thread_fils(int foo) {
-  /*printf("je suis le thread fils. \n\tMon pid est %d. \n\tMon tid est %u\n\tJe vais dormir 3s...\n",
-	 getpid(),(int)pthread_self());
-  */
-
-  printf("--> J'ai pour argument %d \n", foo);
-  sleep(3);
-  pthread_exit((void *)pthread_self());
+	printf("--> J'ai pour argument %d \n", foo);
+	sleep(3);
+	pthread_exit((void *)pthread_self());
 }
 
 int main() {
-  int err;
-  void *status;
-  unsigned long idt;
-  int i;
-  int policy = SCHED_FIFO;
-  
-  err = pthread_attr_init(&attr);
-  if (err) {
-	  printf("erreur pthread_attr_init\n");
-	  exit(EXIT_FAILURE);
-  }
-  
-	
+	int err;
+	void *status;
+	unsigned long idt;
+	int i;
+	int policy = SCHED_FIFO;
+
+	err = pthread_attr_init(&attr);
+	if (err) {
+		printf("erreur pthread_attr_init\n");
+		exit(EXIT_FAILURE);
+	}
+
+
 	for(i = 0; i<5; i++){
 		printf("--> Je donne pour argument %d \n", i);
 		err = pthread_create(&tid, &attr, (void *) thread_fils, i);
@@ -38,17 +34,15 @@ int main() {
 			printf("erreur create\n");
 			exit (EXIT_FAILURE);
 		}
- 	}
-  
-  /*printf("Je suis le pere. \n\tMon pid est %d \n\tMon tid est %u. \n\tJ'ai cree le thread fils de tid %u\n",
-		  getpid(), (int)pthread_self(),tid);
-  */
-  err = pthread_join(tid, &status);
-  if (err) {
-	printf("erreur join\n");
-	exit (EXIT_FAILURE);
-  }
-  idt = (unsigned long) status;
-  //printf("Le pere a synchronise sur la fin du fils (tid %u)  \n\tstatus recu : %u\n",tid, idt);
+	}
+
+
+	err = pthread_join(tid, &status);
+	if (err) {
+		printf("erreur join\n");
+		exit (EXIT_FAILURE);
+	}
+	idt = (unsigned long) status;
+	//printf("Le pere a synchronise sur la fin du fils (tid %u)  \n\tstatus recu : %u\n",tid, idt);
 
 }
