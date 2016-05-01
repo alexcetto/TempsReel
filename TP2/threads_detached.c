@@ -34,6 +34,7 @@ int main() {
           getpid(), (int)pthread_self(),(unsigned int)tid);
   
   err = pthread_join(tid, &status);
+  printf("This is the error code : %d\n", err);
   if (err) {
     printf("erreur join\n");
     exit (EXIT_FAILURE);
