@@ -406,11 +406,12 @@ int main(int argc, char **argv) {
   iaw[0] = 0;
   iaw[1] = 0;
   iaw[2] = 0;
- 
+  // initialise les propriétés du mutex
   if (pthread_mutexattr_init(&mut_attr)) {
     perror("mutexattr_init");
     exit(1);
   }
+  // Puis définit l'héritage de priorité en fonction des options
   if (prio_inherit) {
     if (pthread_mutexattr_setprotocol(&mut_attr, PTHREAD_PRIO_INHERIT)){
   perror("PRIO_INHERIT attribute");
@@ -422,7 +423,7 @@ int main(int argc, char **argv) {
     perror("mutex_init");
     exit(1);
   }
-
+// initiatilisation des sémaphores
   err = sem_init(&sem1, 0, 0);
   if (err) {
     perror("sem_init 1");
@@ -444,11 +445,13 @@ int main(int argc, char **argv) {
   if (pthread_attr_init(&attr)) {
     perror("pthread_attr_init");
   }
+  // On précise qu'on va modifier le scheduling
   err = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
   if (err) {
     printf("erreur main setinheritsched\n");
     exit(EXIT_FAILURE);
   }
+  // Scheduling FIFO
   err = pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
   if (err) {
      printf("erreur main setschedpolicy\n");
@@ -461,15 +464,17 @@ int main(int argc, char **argv) {
     printf("erreur main setscherparam\n");
     exit(EXIT_FAILURE);
   }
-
+  // L'ordonnanceur a une priorité de 4
   if (pthread_create(&tid_ordo, &attr, thread_ordo, NULL)) {
     perror("pthread_create thread_ordo");
     exit(EXIT_FAILURE);
   }
+  // Sur le CPU0
   pthread_setaffinity_np(tid_ordo, sizeof(cpu_set_t), & cpuset);
 
   pthread_join(tid_ordo, NULL);
   
+  // Affichage des informations de log
   for (n=0; n< nb_info; n++) {
 
     switch (info[n].action) {
