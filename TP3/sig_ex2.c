@@ -10,9 +10,12 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <time.h>
-#define MYSIG2D SIGRTMAX
-#define MYSIGSTOP SIGRTMAX-1
-#define MYSIGALARM SIGRTMAX-2
+#define MYSIG2D 		SIGRTMAX
+#define MYSIGSTOP 		SIGRTMAX-1
+#define MYSIGALARM	 	SIGRTMAX-2
+#define COMPTE_SIGNAUX 	1
+#define TERMINE_FILS 	2
+#define FIN_MESURE 		3
 
 int nsigs = 0;
 pid_t chpid;
@@ -22,7 +25,8 @@ struct itimerspec setting;
 main (int argc, char **argv)
 {
 	struct sigaction sa;
-	extern void compte_signaux(), fin_mesure(), termine_fils();
+	//extern void compte_signaux(), fin_mesure(), termine_fils();
+	extern void newHandler(int action);
 	sigset_t blockem;
 
 	if (argc < 2) {
@@ -40,24 +44,29 @@ main (int argc, char **argv)
 	sigprocmask(SIG_BLOCK, &blockem, NULL);
 
 	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-	sa.sa_handler = fin_mesure;            /* Fin de la mesure */
+	sa.sa_flags = SA_SIGINFO;
+	sa.sa_sigaction = newHandler;            /* Fin de la mesure */
+
 
 	if (sigaction(MYSIGALARM, &sa, NULL) < 0) {
 		perror("sigaction MYSIGALARM");
 		exit(1);
 	}
 
-	sa.sa_handler = compte_signaux;           /* Comptage du nombre de signaux recus */
+// PLUS BESOIN DE ÇA
+	/**
+	sa.sa_sigaction = compte_signaux;           
 	if (sigaction(MYSIG2D, &sa, NULL) < 0) {
 		perror("sigaction MYSIG2D");
 	}
 
-	sa.sa_handler = termine_fils;           /* Fin du processus fils */
-	sigfillset(&sa.sa_mask);                /* Tous les signaux bloques apres la fin de la mesure */
+	sa.sa_sigaction = termine_fils;           
+	sigfillset(&sa.sa_mask);                
 	if (sigaction(MYSIGSTOP, &sa, NULL) < 0) {
 		perror("sigaction MYSIGSTOP");
 	}
+
+	*/
 
 	switch (chpid = fork()) {
 		case -1: /* erreur */
@@ -95,6 +104,7 @@ proc_pere()
 	timer_t my_alarm;
 	struct sigevent sigspec;
 	int status;
+	union sigval value;
 
 	sigspec.sigev_signo = MYSIGALARM;
 	sigspec.sigev_notify = SIGEV_SIGNAL;
@@ -113,7 +123,9 @@ proc_pere()
 	}
 
 	while(mesure) {
-		if (kill(chpid, MYSIG2D) < 0) {
+		//if (kill(chpid, MYSIG2D) < 0) {
+		if (sigqueue(chpid, MYSIG2D, value))
+		{
 			perror("kill");
 			return;
 		}
@@ -121,12 +133,37 @@ proc_pere()
 	}
 	printf("%d signaux envoyes par le pere\n",nsigs);
 	fflush(stdout);
-	kill(chpid, MYSIGSTOP);
+	// kill(chpid, MYSIGSTOP);
+
+	sigqueue(chpid, MYSIGSTOP, value);
+
 	wait(&status);
 	exit(0);
 
 }
 
+void newHandler(int action){
+	switch(action){
+		case COMPTE_SIGNAUX:
+			nsigs++;
+			break;
+		
+		case TERMINE_FILS:
+			mesure = 0;
+			break;
+
+		case FIN_MESURE:
+			mesure = 0;
+			break;
+
+		default:
+			exit(0);
+			break;
+	}
+}
+
+
+/** PLUS UTILE
 void compte_signaux()
 {
 	nsigs++;
@@ -142,3 +179,4 @@ void fin_mesure()
 	mesure = 0;
 }
 
+*/
